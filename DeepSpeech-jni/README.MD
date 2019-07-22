@@ -44,7 +44,7 @@ $ENV{JAVA_HOME}/include/${PLATFORM}
 ```
 points to the platform specific JNI headers.
 
-####Examples
+#### Examples
 ```cmake
 set(PLATFORM linux)
 ```
