@@ -32,12 +32,9 @@ void Java_org_mozilla_deepspeech_DeepSpeech_destroyModel(JNIEnv *, jclass, jlong
 
 jint
 Java_org_mozilla_deepspeech_DeepSpeech_enableDecoderWithLM(JNIEnv *env, jclass, jlong modelStatePtr,
-                                                           jstring alphaBetConfigPath,
                                                            jstring lmPath,
                                                            jfloat alpha, jfloat beta) {
-    jboolean isAlphabetStrCopy, isLmPathCopy;
-    auto alphaBetConfigPathCStr = const_cast<char *>(env->GetStringUTFChars(alphaBetConfigPath,
-                                                                            &isAlphabetStrCopy));
+    jboolean isLmPathCopy;
     auto lmPathCStr = const_cast<char *>(env->GetStringUTFChars(lmPath, &isLmPathCopy));
 
     // https://github.com/mozilla/DeepSpeech/pull/2681/files
@@ -47,9 +44,6 @@ Java_org_mozilla_deepspeech_DeepSpeech_enableDecoderWithLM(JNIEnv *env, jclass, 
     DS_EnableExternalScorer((ModelState *) modelStatePtr, lmPathCStr);
     jint status = DS_SetScorerAlphaBeta((ModelState *) modelStatePtr, alpha, beta);
 
-    if (isAlphabetStrCopy == JNI_TRUE) {
-        env->ReleaseStringUTFChars(alphaBetConfigPath, alphaBetConfigPathCStr);
-    }
     if (isLmPathCopy == JNI_TRUE) {
         env->ReleaseStringUTFChars(lmPath, lmPathCStr);
     }

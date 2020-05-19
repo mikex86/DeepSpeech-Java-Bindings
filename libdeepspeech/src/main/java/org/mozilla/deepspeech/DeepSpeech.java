@@ -168,7 +168,6 @@ public class DeepSpeech {
      * Enable decoding using beam scoring with a KenLM language recognition.
      *
      * @param modelStatePtr      The ModelState pointer for the recognition being changed.
-     * @param alphaBetConfigPath The path to the configuration file specifying the alphabet used by the network. See alphabet.h.
      * @param scorerPath         The path to the scorer package generated with `data/lm/generate_package.py`.
      * @param alpha              The alpha hyperparameter of the CTC decoder. Language Model weight.
      * @param beta               The beta hyperparameter of the CTC decoder. Word insertion weight.
@@ -176,7 +175,6 @@ public class DeepSpeech {
      */
     @NativeType("jint")
     public static native int enableDecoderWithLM(@NativeType("struct ModelState *") long modelStatePtr,
-                                                 @NativeType("jstring") @NotNull String alphaBetConfigPath,
                                                  @NativeType("jstring") @NotNull String scorerPath,
                                                  @NativeType("jfloat") float alpha,
                                                  @NativeType("jfloat") float beta);

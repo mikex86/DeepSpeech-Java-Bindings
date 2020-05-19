@@ -44,15 +44,13 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
     /**
      * Enables decoding using beam scoring with a KenLM language model.
      *
-     * @param alphabetFile The path to the configuration file specifying the alphabet used by the network.
-     * @param lmBinaryFile The path to the language model binary file.
-     * @param trieFile     The path to the trie file build from the same vocabulary as the language model binary
+     * @param scorerPath   The path to the scorer package generated with `data/lm/generate_package.py`.
      * @param lmAlpha      The alpha hyper-parameter of the CTC decoder. Language Model weight.
      * @param lmBeta       The beta hyper-parameter of the CTC decoder. Word insertion weight.
      * @throws FileNotFoundException if one of the files is not found.
      */
-    public void enableLMLanguageModel(@NotNull File alphabetFile, @NotNull File lmBinaryFile, @NotNull File trieFile, float lmAlpha, float lmBeta) throws FileNotFoundException {
-        enableDecoderWithLM(this.pointer, checkExists(alphabetFile).getPath(), checkExists(lmBinaryFile).getPath(), checkExists(trieFile).getPath(), lmAlpha, lmBeta);
+    public void enableLMLanguageModel(@NotNull File scorerPath, float lmAlpha, float lmBeta) throws FileNotFoundException {
+        enableDecoderWithLM(this.pointer, checkExists(scorerPath).getPath(), lmAlpha, lmBeta);
     }
 
     /**
