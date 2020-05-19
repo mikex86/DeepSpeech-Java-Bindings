@@ -1,3 +1,4 @@
+#include <iostream>
 #include "org_mozilla_deepspeech_DeepSpeech.h"
 
 jint
@@ -148,12 +149,12 @@ jstring Java_org_mozilla_deepspeech_DeepSpeech_finishStream(JNIEnv *env, jclass,
 }
 
 jlong
-Java_org_mozilla_deepspeech_DeepSpeech_finishStreamWithMetadata(JNIEnv *, jclass, jlong streamPtr) {
-    return reinterpret_cast<jlong>(DS_FinishStreamWithMetadata((StreamingState *) streamPtr));
+Java_org_mozilla_deepspeech_DeepSpeech_finishStreamWithMetadata(JNIEnv *, jclass, jlong streamPtr, jlong numResults) {
+    return reinterpret_cast<jlong>(DS_FinishStreamWithMetadata((StreamingState *) streamPtr, numResults));
 }
 
 void Java_org_mozilla_deepspeech_DeepSpeech_discardStream(JNIEnv *, jclass, jlong streamPtr) {
-    DS_DiscardStream((StreamingState *) streamPtr);
+    DS_FreeStream((StreamingState *) streamPtr);
 }
 
 void Java_org_mozilla_deepspeech_DeepSpeech_freeMetadata(JNIEnv *, jclass, jlong metaPtr) {
@@ -161,7 +162,9 @@ void Java_org_mozilla_deepspeech_DeepSpeech_freeMetadata(JNIEnv *, jclass, jlong
 }
 
 void Java_org_mozilla_deepspeech_DeepSpeech_printVersions(JNIEnv *, jclass) {
-    DS_PrintVersions();
+    char *cStr = DS_Version();
+    std::cout << cStr << '\n';
+    DS_FreeString(cStr);
 }
 
 jint Java_org_mozilla_deepspeech_DeepSpeech_nGetConfiguration(JNIEnv *, jclass) {

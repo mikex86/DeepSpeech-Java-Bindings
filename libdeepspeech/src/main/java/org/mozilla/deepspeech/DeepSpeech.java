@@ -396,13 +396,14 @@ public class DeepSpeech {
      * inference, returns per-letter metadata.
      *
      * @param streamPointer A streaming state pointer created by {@link #setupStream(long, long, long, ByteBuffer)}.
+     * @param numResults The number of candidate transcripts to return.
      * @return Outputs a struct of individual letters along with their timing information.
      * The user is responsible for freeing Metadata by calling {@link #freeMetadata(long)}. Returns {@link #NULL} on error.
      */
     @Calls("DS_FinishStreamWithMetadata")
     @NativeType("struct Metadata *")
     @DynamicPointer("freeMetadata")
-    public static native long finishStreamWithMetadata(@NativeType("struct StreamingState *") long streamPointer);
+    public static native long finishStreamWithMetadata(@NativeType("struct StreamingState *") long streamPointer, long numResults);
 
     /**
      * This method will free the state pointer #streamPointer.
