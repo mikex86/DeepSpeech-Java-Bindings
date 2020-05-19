@@ -3,7 +3,7 @@
 jint
 Java_org_mozilla_deepspeech_DeepSpeech_nCreateModel(JNIEnv *env, jclass, jstring modelPath,
                                                     jlong nCep,
-                                                    jlong nContext, jstring alphabetConfigPath,
+                                                    jlong nContext,
                                                     jlong beamWidth,
                                                     jobject modelStatePtr) {
     jboolean isModelPathCopy, isAlphaBetCopy;
@@ -11,10 +11,11 @@ Java_org_mozilla_deepspeech_DeepSpeech_nCreateModel(JNIEnv *env, jclass, jstring
     auto modelPathCStr = (char *) env->GetStringUTFChars(modelPath, &isModelPathCopy);
     auto alphaBetCStr = (char *) env->GetStringUTFChars(alphabetConfigPath, &isAlphaBetCopy);
 
+// https://github.com/mozilla/DeepSpeech/commit/8c820817794d445746aefb1b5347b35bf5e0c621#diff-0317a0e76ece10e0dba742af310a2362
     jint state = DS_CreateModel(modelPathCStr, static_cast<unsigned int>(nCep),
-                                static_cast<unsigned int>(nContext), alphaBetCStr,
-                                static_cast<unsigned int>(beamWidth),
                                 &ptr);
+
+    DS_SetModelBeamWidth(ptr, static_cast<unsigned int>(beamWidth));
     auto *bufferPtr = (jlong *) (env->GetDirectBufferAddress(modelStatePtr));
 
     bufferPtr[0] = reinterpret_cast<jlong>(ptr);
@@ -26,33 +27,31 @@ Java_org_mozilla_deepspeech_DeepSpeech_nCreateModel(JNIEnv *env, jclass, jstring
 }
 
 void Java_org_mozilla_deepspeech_DeepSpeech_destroyModel(JNIEnv *, jclass, jlong modelPtr) {
-    DS_DestroyModel(reinterpret_cast<ModelState *>(modelPtr));
+    DS_FreeModel(reinterpret_cast<ModelState *>(modelPtr));
 }
 
 jint
 Java_org_mozilla_deepspeech_DeepSpeech_enableDecoderWithLM(JNIEnv *env, jclass, jlong modelStatePtr,
                                                            jstring alphaBetConfigPath,
                                                            jstring lmPath,
-                                                           jstring triePath, jfloat alpha,
-                                                           jfloat beta) {
-    jboolean isAlphabetStrCopy, isLmPathCopy, isTriePathCopy;
+                                                           jfloat alpha, jfloat beta) {
+    jboolean isAlphabetStrCopy, isLmPathCopy;
     auto alphaBetConfigPathCStr = const_cast<char *>(env->GetStringUTFChars(alphaBetConfigPath,
                                                                             &isAlphabetStrCopy));
     auto lmPathCStr = const_cast<char *>(env->GetStringUTFChars(lmPath, &isLmPathCopy));
-    auto triePathCStr = const_cast<char *>(env->GetStringUTFChars(triePath, &isTriePathCopy));
 
-    jint status = DS_EnableDecoderWithLM((ModelState *) modelStatePtr, alphaBetConfigPathCStr,
-                                         lmPathCStr, triePathCStr,
-                                         alpha, beta);
+    // https://github.com/mozilla/DeepSpeech/pull/2681/files
+    // lm: models/lm.binary, trie: models/trie
+    // became scorer: models/kenlm.scorer
+    //    DS_DisableExternalScorer
+    DS_EnableExternalScorer((ModelState *) modelStatePtr, lmPathCStr);
+    jint status = DS_SetScorerAlphaBeta((ModelState *) modelStatePtr, alpha, beta);
 
     if (isAlphabetStrCopy == JNI_TRUE) {
         env->ReleaseStringUTFChars(alphaBetConfigPath, alphaBetConfigPathCStr);
     }
     if (isLmPathCopy == JNI_TRUE) {
         env->ReleaseStringUTFChars(lmPath, lmPathCStr);
-    }
-    if (isTriePathCopy == JNI_TRUE) {
-        env->ReleaseStringUTFChars(triePath, triePathCStr);
     }
 
     return status;

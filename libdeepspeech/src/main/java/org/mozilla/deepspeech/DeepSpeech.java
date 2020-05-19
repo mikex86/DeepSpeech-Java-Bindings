@@ -121,8 +121,6 @@ public class DeepSpeech {
      * @param modelPath          The path to the frozen recognition graph.
      * @param nCep               The number of cepstrum the recognition was trained with.
      * @param nContext           The context window the recognition was trained with.
-     * @param alphabetConfigPath The path to the configuration file specifying
-     *                           the alphabet used by the network. See alphabet.h.
      * @param beamWidth          The beam width used by the decoder. A larger beam
      *                           width generates better results at the cost of decoding
      *                           time.
@@ -137,14 +135,13 @@ public class DeepSpeech {
     public static int createModel(@NotNull String modelPath,
                                   @NativeType("jlong") long nCep,
                                   @NativeType("jlong") long nContext,
-                                  @NotNull String alphabetConfigPath,
                                   @NativeType("jlong") long beamWidth,
                                   @CallByReference
                                   @NativeType("struct ModelState *")
                                   @NotNull
                                   @DynamicPointer("destroyModel") ByteBuffer modelStatePointer) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(modelStatePointer, ByteOrder.nativeOrder(), 8); // 8 -> Long.BYTES
-        return nCreateModel(modelPath, nCep, nContext, alphabetConfigPath, beamWidth, modelStatePointer);
+        return nCreateModel(modelPath, nCep, nContext, beamWidth, modelStatePointer);
     }
 
     /**
@@ -154,7 +151,6 @@ public class DeepSpeech {
     private static native int nCreateModel(@NotNull String modelPath,
                                            @NativeType("jlong") long nCep,
                                            @NativeType("jlong") long nContext,
-                                           @NotNull String alphabetConfigPath,
                                            @NativeType("jlong") long beamWidth,
                                            @CallByReference
                                            @NativeType("struct ModelState *")
@@ -173,8 +169,7 @@ public class DeepSpeech {
      *
      * @param modelStatePtr      The ModelState pointer for the recognition being changed.
      * @param alphaBetConfigPath The path to the configuration file specifying the alphabet used by the network. See alphabet.h.
-     * @param lmPath             The path to the language recognition binary file.
-     * @param triePath           The path to the trie file build from the same vocabulary as the language recognition binary.
+     * @param scorerPath         The path to the scorer package generated with `data/lm/generate_package.py`.
      * @param alpha              The alpha hyperparameter of the CTC decoder. Language Model weight.
      * @param beta               The beta hyperparameter of the CTC decoder. Word insertion weight.
      * @return Zero on success, non-zero on failure (invalid arguments).
@@ -182,8 +177,7 @@ public class DeepSpeech {
     @NativeType("jint")
     public static native int enableDecoderWithLM(@NativeType("struct ModelState *") long modelStatePtr,
                                                  @NativeType("jstring") @NotNull String alphaBetConfigPath,
-                                                 @NativeType("jstring") @NotNull String lmPath,
-                                                 @NativeType("jstring") @NotNull String triePath,
+                                                 @NativeType("jstring") @NotNull String scorerPath,
                                                  @NativeType("jfloat") float alpha,
                                                  @NativeType("jfloat") float beta);
 
