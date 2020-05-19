@@ -30,15 +30,13 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
      * @param modelFile          The file pointing to the frozen recognition graph.
      * @param numCep             The number of cepstrum the recognition was trained with.
      * @param context            The context window the recognition was trained with.
-     * @param alphabetConfigFile The path to the configuration file specifying
-     *                           the alphabet used by the network. See alphabet.h.
      * @param beamWidth          The beam width used by the decoder. A larger beam
      *                           width generates better results at the cost of decoding
      *                           time.
      * @throws FileNotFoundException if either modelFile or alphabetConfigFile is not found
      */
     public DeepSpeechModel(@NotNull File modelFile, long numCep, long context, @NotNull File alphabetConfigFile, long beamWidth) throws FileNotFoundException {
-        super(newModel(modelFile, numCep, context, alphabetConfigFile, beamWidth), UNDEFINED_STRUCT_SIZE);
+        super(newModel(modelFile, numCep, context, beamWidth), UNDEFINED_STRUCT_SIZE);
     }
 
     /**
@@ -93,9 +91,9 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
      *
      * @see DeepSpeechModel#DeepSpeechModel(File, long, long, File, long)
      */
-    private static long newModel(@NotNull File modelFile, long numCep, long context, @NotNull File alphabetConfigFile, long beamWidth) throws FileNotFoundException {
+    private static long newModel(@NotNull File modelFile, long numCep, long context, long beamWidth) throws FileNotFoundException {
         ByteBuffer ptr = ByteBuffer.allocateDirect(NATIVE_POINTER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        if (createModel(checkExists(modelFile).getPath(), numCep, context, checkExists(alphabetConfigFile).getPath(), beamWidth, ptr) != 0)
+        if (createModel(checkExists(modelFile).getPath(), numCep, context, beamWidth, ptr) != 0)
             throw new RuntimeException("Failed to create recognition!");
         return getNativePointer(getBufferAddress(ptr));
     }
