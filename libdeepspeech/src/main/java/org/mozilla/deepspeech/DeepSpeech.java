@@ -132,13 +132,12 @@ public class DeepSpeech {
      */
     @NativeType("jint")
     public static int createModel(@NotNull String modelPath,
-                                  @NativeType("jlong") long beamWidth,
                                   @CallByReference
                                   @NativeType("struct ModelState *")
                                   @NotNull
                                   @DynamicPointer("destroyModel") ByteBuffer modelStatePointer) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(modelStatePointer, ByteOrder.nativeOrder(), 8); // 8 -> Long.BYTES
-        return nCreateModel(modelPath, beamWidth, modelStatePointer);
+        return nCreateModel(modelPath, modelStatePointer);
     }
 
     /**
@@ -146,7 +145,6 @@ public class DeepSpeech {
      */
     @NativeType("jint")
     private static native int nCreateModel(@NotNull String modelPath,
-                                           @NativeType("jlong") long beamWidth,
                                            @CallByReference
                                            @NativeType("struct ModelState *")
                                            @NotNull

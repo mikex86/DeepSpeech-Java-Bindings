@@ -16,7 +16,7 @@ enum BuildConfiguration {
 };
 
 JNIEXPORT jint JNICALL Java_org_mozilla_deepspeech_DeepSpeech_nCreateModel
-        (JNIEnv *, jclass, jstring, jlong, jobject);
+        (JNIEnv *, jclass, jstring, jobject);
 
 JNIEXPORT void JNICALL Java_org_mozilla_deepspeech_DeepSpeech_destroyModel
         (JNIEnv *, jclass, jlong);

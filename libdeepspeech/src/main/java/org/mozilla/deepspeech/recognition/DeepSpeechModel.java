@@ -30,13 +30,10 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
 
     /**
      * @param modelFile          The file pointing to the frozen recognition graph.
-     * @param beamWidth          The beam width used by the decoder. A larger beam
-     *                           width generates better results at the cost of decoding
-     *                           time.
      * @throws FileNotFoundException if modelFile is not found
      */
-    public DeepSpeechModel(@NotNull File modelFile, long beamWidth) throws FileNotFoundException {
-        super(newModel(modelFile, beamWidth), UNDEFINED_STRUCT_SIZE);
+    public DeepSpeechModel(@NotNull File modelFile) throws FileNotFoundException {
+        super(newModel(modelFile), UNDEFINED_STRUCT_SIZE);
     }
 
     /**
@@ -52,8 +49,8 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
     /**
      * Set beam width value used by the model.
      *
-     * @param beamWidth The beam width used by the model. A larger beam width value
-     *                   generates better results at the cost of decoding time.
+     * @param beamWidth The beam width used by the model.
+     *                  A larger beam width value generates better results at the cost of decoding time.
      *
      * @return Zero on success, non-zero on failure.
      */
@@ -137,9 +134,9 @@ public class DeepSpeechModel extends DynamicStruct.LifecycleDisposed {
      *
      * @see DeepSpeechModel#DeepSpeechModel(File, long)
      */
-    private static long newModel(@NotNull File modelFile, long beamWidth) throws FileNotFoundException {
+    private static long newModel(@NotNull File modelFile) throws FileNotFoundException {
         ByteBuffer ptr = ByteBuffer.allocateDirect(NATIVE_POINTER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        if (createModel(checkExists(modelFile).getPath(), beamWidth, ptr) != 0)
+        if (createModel(checkExists(modelFile).getPath(), ptr) != 0)
             throw new RuntimeException("Failed to create recognition!");
         return getNativePointer(getBufferAddress(ptr));
     }
