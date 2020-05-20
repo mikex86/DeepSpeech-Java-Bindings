@@ -32,7 +32,7 @@ Java_org_mozilla_deepspeech_DeepSpeech_getModelBeamWidth(JNIEnv *env, jclass, jl
 
 jint
 Java_org_mozilla_deepspeech_DeepSpeech_setModelBeamWidth(JNIEnv *env, jclass, jlong modelStatePtr, jlong beamWidth) {
-    return DS_SetModelBeamWidth((ModelState *) modelStatePtr, static_cast<unsigned int>beamWidth);
+    return DS_SetModelBeamWidth((ModelState *) modelStatePtr, static_cast<unsigned int>(beamWidth));
 }
 
 jint
@@ -175,7 +175,7 @@ void Java_org_mozilla_deepspeech_DeepSpeech_freeMetadata(JNIEnv *, jclass, jlong
     DS_FreeMetadata((Metadata *) metaPtr);
 }
 
-jstring Java_org_mozilla_deepspeech_DeepSpeech_getVersion(JNIEnv *, jclass) {
+jstring Java_org_mozilla_deepspeech_DeepSpeech_getVersion(JNIEnv *env, jclass) {
     char *cString = DS_Version();
     size_t cStrLen = strlen(cString);
     jstring str = env->NewString(reinterpret_cast<const jchar *>(cString),
@@ -184,7 +184,7 @@ jstring Java_org_mozilla_deepspeech_DeepSpeech_getVersion(JNIEnv *, jclass) {
     return str;
 }
 
-jstring Java_org_mozilla_deepspeech_DeepSpeech_errorCodeToErrorMessage(JNIEnv *, jclass, jlong errorCode) {
+jstring Java_org_mozilla_deepspeech_DeepSpeech_errorCodeToErrorMessage(JNIEnv *env, jclass, jlong errorCode) {
     char *cString = DS_ErrorCodeToErrorMessage(errorCode);
     size_t cStrLen = strlen(cString);
     jstring str = env->NewString(reinterpret_cast<const jchar *>(cString),
