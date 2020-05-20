@@ -6,6 +6,7 @@ import org.mozilla.deepspeech.doc.WrappsStruct;
 import org.mozilla.deepspeech.nativewrapper.DynamicStruct;
 import org.mozilla.deepspeech.utils.NativeAccess;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -14,7 +15,9 @@ import static org.mozilla.deepspeech.DeepSpeech.freeMetadata;
 /**
  * Represents the entire STT output as an array of character metadata objects.
  * Stores properties like a confidence value and time stamps for each spoken character.
- *
+ * 
+ * @see DeepSpeechModel#doSpeechRecognitionWithMeta(ByteBuffer, long, long) 
+ * @see org.mozilla.deepspeech.recognition.stream.SpeechRecognitionAudioStream#doSpeechRecognitionWithMeta(DeepSpeechModel, long) 
  * @see #spokenCharacters
  */
 @WrappsStruct("Metadata")
