@@ -32,7 +32,7 @@ task linuxJniZip(type: Zip) {
 publishing {
   publications {
       libdeepspeech(MavenPublication) {
-          from componentss.java
+          from components.java
       }
       linuxJni(MavenPublication) {
           classifier "linux"
