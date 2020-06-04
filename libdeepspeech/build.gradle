@@ -16,10 +16,28 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile("org.jetbrains:annotations:16.0.1") // Jetbrains annotations library
 }
+
+task linuxJniZip(type: Zip) {
+    archiveName("deepspeech-jni.zip")
+    destinationDir(file("$buildDir/dist"))
+//    archiveFileName = "deepspeech-jni.zip"
+//    destinationDirectory = file("$buildDir/target")
+    from "../DeepSpeech-jni/libs/linux"
+}
+
+//artifacts {
+//    published
+//}
+
 publishing {
   publications {
-      deepspeech(MavenPublication) {
-          from components.java
+      libdeepspeech(MavenPublication) {
+          from componentss.java
+      }
+      linuxJni(MavenPublication) {
+          classifier "linux"
+          packaging "zip"
+          artifact linuxJniZip
       }
   }
   repositories {
