@@ -1,6 +1,7 @@
 plugins {
-    id 'maven-publish'
     id 'java'
+    id 'distribution'
+    id 'maven-publish'
 }
 
 group 'org.mozilla.deepspeech'
@@ -17,27 +18,37 @@ dependencies {
     compile("org.jetbrains:annotations:16.0.1") // Jetbrains annotations library
 }
 
-task linuxJniZip(type: Zip) {
-    archiveName("deepspeech-jni.zip")
-    destinationDir(file("$buildDir/dist"))
-//    archiveFileName = "deepspeech-jni.zip"
-//    destinationDirectory = file("$buildDir/target")
-    from "../DeepSpeech-jni/libs/linux"
-}
+//task linuxJniZip(type: Zip) {
+//    archiveName("deepspeech-jni.zip")
+//    destinationDir(file("$buildDir/dist"))
+////    archiveFileName = "deepspeech-jni.zip"
+////    destinationDirectory = file("$buildDir/target")
+//    from "../DeepSpeech-jni/libs/linux"
+//}
 
 //artifacts {
-//    published
+//    linuxJniZip
 //}
+
+distributions {
+    linux {
+        contents {
+            from '../DeepSpeech-jni/libs/linux'
+        }
+    }
+    windows {
+        contents {
+            from '../DeepSpeech-jni/libs/windows'
+        }
+    }
+}
 
 publishing {
   publications {
       libdeepspeech(MavenPublication) {
           from components.java
-      }
-      linuxJni(MavenPublication) {
-          classifier "linux"
-          packaging "zip"
-          artifact linuxJniZip
+          artifact linuxDistZip
+          artifact windowsDistZip
       }
   }
   repositories {
