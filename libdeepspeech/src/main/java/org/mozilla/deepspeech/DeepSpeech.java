@@ -23,7 +23,8 @@ import static org.mozilla.deepspeech.utils.NativeAccess.NATIVE_POINTER_SIZE;
  * Unsafe. Use wrapper objects instead!
  *
  * @see org.mozilla.deepspeech.recognition.DeepSpeechModel
- * @see SpeechRecognitionAudioStream
+ * @see org.mozilla.deepspeech.recognition.stream.SpeechRecognitionAudioStream
+ * @see org.mozilla.deepspeech.recognition.stream.StreamingState
  * @see org.mozilla.deepspeech.recognition.SpeechRecognitionResult
  */
 public class DeepSpeech {
@@ -119,10 +120,6 @@ public class DeepSpeech {
      * An object providing an interface to a trained DeepSpeech recognition.
      *
      * @param modelPath          The path to the frozen recognition graph.
-     * @param nCep               The number of cepstrum the recognition was trained with.
-     * @param nContext           The context window the recognition was trained with.
-     * @param alphabetConfigPath The path to the configuration file specifying
-     *                           the alphabet used by the network. See alphabet.h.
      * @param beamWidth          The beam width used by the decoder. A larger beam
      *                           width generates better results at the cost of decoding
      *                           time.
@@ -135,16 +132,12 @@ public class DeepSpeech {
      */
     @NativeType("jint")
     public static int createModel(@NotNull String modelPath,
-                                  @NativeType("jlong") long nCep,
-                                  @NativeType("jlong") long nContext,
-                                  @NotNull String alphabetConfigPath,
-                                  @NativeType("jlong") long beamWidth,
                                   @CallByReference
                                   @NativeType("struct ModelState *")
                                   @NotNull
                                   @DynamicPointer("destroyModel") ByteBuffer modelStatePointer) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(modelStatePointer, ByteOrder.nativeOrder(), 8); // 8 -> Long.BYTES
-        return nCreateModel(modelPath, nCep, nContext, alphabetConfigPath, beamWidth, modelStatePointer);
+        return nCreateModel(modelPath, modelStatePointer);
     }
 
     /**
@@ -152,10 +145,6 @@ public class DeepSpeech {
      */
     @NativeType("jint")
     private static native int nCreateModel(@NotNull String modelPath,
-                                           @NativeType("jlong") long nCep,
-                                           @NativeType("jlong") long nContext,
-                                           @NotNull String alphabetConfigPath,
-                                           @NativeType("jlong") long beamWidth,
                                            @CallByReference
                                            @NativeType("struct ModelState *")
                                            @NotNull
@@ -168,24 +157,36 @@ public class DeepSpeech {
      */
     public static native void destroyModel(@NativeType("ModelState *") long modelStatePointer);
 
+    public static native int getModelBeamWidth(@NativeType("ModelState *") long modelStatePointer);
+
+    public static native int setModelBeamWidth(@NativeType("ModelState *") long modelStatePointer, long beamWidth);
+
+    public static native int getModelSampleRate(@NativeType("ModelState *") long modelStatePointer);
+
     /**
      * Enable decoding using beam scoring with a KenLM language recognition.
      *
      * @param modelStatePtr      The ModelState pointer for the recognition being changed.
-     * @param alphaBetConfigPath The path to the configuration file specifying the alphabet used by the network. See alphabet.h.
-     * @param lmPath             The path to the language recognition binary file.
-     * @param triePath           The path to the trie file build from the same vocabulary as the language recognition binary.
+     * @param scorerPath         The path to the scorer package generated with `data/lm/generate_package.py`.
      * @param alpha              The alpha hyperparameter of the CTC decoder. Language Model weight.
      * @param beta               The beta hyperparameter of the CTC decoder. Word insertion weight.
      * @return Zero on success, non-zero on failure (invalid arguments).
      */
     @NativeType("jint")
     public static native int enableDecoderWithLM(@NativeType("struct ModelState *") long modelStatePtr,
-                                                 @NativeType("jstring") @NotNull String alphaBetConfigPath,
-                                                 @NativeType("jstring") @NotNull String lmPath,
-                                                 @NativeType("jstring") @NotNull String triePath,
+                                                 @NativeType("jstring") @NotNull String scorerPath,
                                                  @NativeType("jfloat") float alpha,
                                                  @NativeType("jfloat") float beta);
+
+    @NativeType("jint")
+    @Calls("DS_SetScorerAlphaBeta")
+    public static native int setScorerAlphaBeta(@NativeType("struct ModelState *") long modelStatePtr,
+                                                @NativeType("jfloat") float alpha,
+                                                @NativeType("jfloat") float beta);
+
+    @NativeType("jint")
+    @Calls("DS_DisableExternalScorer")
+    public static native int disableExternalScorer(@NativeType("struct ModelState *") long modelStatePtr);
 
     /**
      * Use the DeepSpeech recognition to perform Speech-To-Text.
@@ -193,7 +194,6 @@ public class DeepSpeech {
      * @param modelStatePointer The ModelState pointer for the recognition to use.
      * @param audioBuffer       A 16-bit, mono raw audio signal at the appropriate sample rate.
      * @param numSamples        The number of samples in the audio signal.
-     * @param sampleRate        The sample-rate of the audio signal.
      * @return The STT result. Returns null on error.
      * @throws UnexpectedBufferCapacityException if #numSamples does not match the allocated buffer capacity. Condition: {@code numSamples * Short.BYTES > audioBuffer.capacity()}
      * @throws IncorrectBufferByteOrderException if the audioBuffer has a byte order different to {@link ByteOrder#LITTLE_ENDIAN}.
@@ -205,39 +205,35 @@ public class DeepSpeech {
     public static String speechToText(@NativeType("struct ModelState *") long modelStatePointer,
                                       @NativeType("const short *")
                                       @NotNull ByteBuffer audioBuffer,
-                                      @NativeType("jlong") long numSamples,
-                                      @NativeType("jlong") long sampleRate) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
+                                      @NativeType("jlong") long numSamples) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(audioBuffer, ByteOrder.LITTLE_ENDIAN, numSamples * 2 /* sizeof(short) */);
-        return nSpeechToText(modelStatePointer, audioBuffer, numSamples, sampleRate);
+        return nSpeechToText(modelStatePointer, audioBuffer, numSamples);
     }
 
 
     /**
-     * Unexposed unsafe method that should not be used. Use instead: {@link #speechToText(long, ByteBuffer, long, long)}
+     * Unexposed unsafe method that should not be used. Use instead: {@link #speechToText(long, ByteBuffer, long)}
      */
     @Nullable
     @Calls("DS_SpeechToText")
     private static native String nSpeechToText(@NativeType("struct ModelState *") long modelStatePointer,
                                                @NativeType("const short *") @NotNull ByteBuffer audioBuffer,
-                                               @NativeType("jlong") long numSamples,
-                                               @NativeType("jlong") long sampleRate);
+                                               @NativeType("jlong") long numSamples);
 
     /**
-     * WARNING: Unsafe function. Consider using {@link #speechToText(long, ByteBuffer, long, long)}
+     * WARNING: Unsafe function. Consider using {@link #speechToText(long, ByteBuffer, long)}
      * Use the DeepSpeech recognition to perform Speech-To-Text.
      *
      * @param modelStatePointer The ModelState pointer for the recognition to use.
      * @param audioBufferPtr    A 16-bit, mono raw audio signal at the appropriate sample rate.
      * @param numSamples        The number of samples in the audio signal.
-     * @param sampleRate        The sample-rate of the audio signal.
      * @return The STT result. Returns null on error.
      */
     @Nullable
     @Calls("DS_SpeechToText")
     public static native String speechToTextUnsafe(@NativeType("struct ModelState *") long modelStatePointer,
                                                     @NativeType("const short *") long audioBufferPtr,
-                                                    @NativeType("jlong") long numSamples,
-                                                    @NativeType("jlong") long sampleRate);
+                                                    @NativeType("jlong") long numSamples);
 
     /**
      * Use the DeepSpeech recognition to perform Speech-To-Text and output metadata
@@ -245,8 +241,9 @@ public class DeepSpeech {
      *
      * @param modelStatePointer The ModelState pointer for the recognition to use.
      * @param audioBufferPtr    A 16-bit, mono raw audio signal at the appropriate sample rate.
+     *                          (matching what the model was trained on)
      * @param numSamples        The number of samples in the audio signal.
-     * @param sampleRate        The sample-rate of the audio signal.
+     * @param numResults        The maximum number of CandidateTranscript structs to return. Returned value might be smaller than this.
      * @return Outputs a struct of individual letters along with their timing information.
      * The user is responsible for freeing Metadata by calling {@link #freeMetadata(long)}. Returns {@link #NULL} on error.
      */
@@ -256,7 +253,7 @@ public class DeepSpeech {
     public static native long speechToTextWithMetadataUnsafe(@NativeType("struct ModelState *") long modelStatePointer,
                                                              @NativeType("const short *") long audioBufferPtr,
                                                              @NativeType("jlong") long numSamples,
-                                                             @NativeType("jlong") long sampleRate);
+                                                             @NativeType("jlong") long numResults);
 
     /**
      * Use the DeepSpeech recognition to perform Speech-To-Text and output metadata
@@ -264,8 +261,9 @@ public class DeepSpeech {
      *
      * @param modelStatePointer The ModelState pointer for the recognition to use.
      * @param audioBuffer       A 16-bit, mono raw audio signal at the appropriate sample rate.
+     *                          (matching what the model was trained on)
      * @param numSamples        The number of samples in the audio signal.
-     * @param sampleRate        The sample-rate of the audio signal.
+     * @param numResults        The maximum number of CandidateTranscript structs to return. Returned value might be smaller than this.
      * @return Outputs a struct of individual letters along with their timing information.
      * The user is responsible for freeing Metadata by calling {@link #freeMetadata(long)}. Returns {@link #NULL} on error.
      * @throws UnexpectedBufferCapacityException if #numSamples does not match the allocated buffer capacity. Condition: {@code numSamples * Short.BYTES > audioBuffer.capacity()}
@@ -280,9 +278,9 @@ public class DeepSpeech {
                                                 @NativeType("const short *")
                                                 @NotNull ByteBuffer audioBuffer,
                                                 @NativeType("jlong") long numSamples,
-                                                @NativeType("jlong") long sampleRate) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
+                                                @NativeType("jlong") long numResults) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(audioBuffer, ByteOrder.nativeOrder(), numSamples * 2 /* sizeof(short) */);
-        return nSpeechToTextWithMetadata(modelStatePointer, audioBuffer, numSamples, sampleRate);
+        return nSpeechToTextWithMetadata(modelStatePointer, audioBuffer, numSamples, numResults);
     }
 
     /**
@@ -295,7 +293,7 @@ public class DeepSpeech {
                                                          @NativeType("const short *")
                                                          @NotNull ByteBuffer audioBuffer,
                                                          @NativeType("jlong") long numSamples,
-                                                         @NativeType("jlong") long sampleRate);
+                                                         @NativeType("jlong") long numResults);
 
     /**
      * Create a new streaming inference state. The streaming state returned
@@ -303,13 +301,10 @@ public class DeepSpeech {
      * and {@link #finishStream(long)}.
      *
      * @param modelStatePointer The ModelState pointer for the recognition to use.
-     * @param preAllocFrames    Number of timestep frames to reserve. One timestep
-     *                          is equivalent to two window lengths (20ms). If set to
-     *                          0 we reserve enough frames for 3 seconds of audio (150).
-     * @param sampleRate        The sample-rate of the audio signal.
      * @param streamPointerOut  an opaque pointer that represents the streaming state. Can
      *                          be {@link #NULL} if an error occurs.
-     *                          Note for JavaBindings: The long buffer must have a capacity of one long otherwise the function will return -1. No native memory will be allocated, so this does not result in a memory leak.
+     *                          Note for JavaBindings: The long buffer must have a capacity of one long otherwise the function will return -1.
+     *                          No native memory will be allocated, so this does not result in a memory leak.
      *                          The function will throw an {@link UnexpectedBufferCapacityException} stating the buffer does not have enough capacity.
      * @return Zero for success, non-zero on failure.
      * @throws UnexpectedBufferCapacityException if the buffer has a capacity smaller than {@link Long#BYTES} bytes.
@@ -320,24 +315,20 @@ public class DeepSpeech {
     @Calls("DS_SetupStream")
     @NativeType("jint")
     public static int setupStream(@NativeType("struct ModelState *") long modelStatePointer,
-                                  @NativeType("jlong") long preAllocFrames,
-                                  @NativeType("jlong") long sampleRate,
                                   @DynamicPointer("finishStream")
                                   @NativeType("struct StreamingState **")
                                   @NotNull
                                   @CallByReference ByteBuffer streamPointerOut) throws UnexpectedBufferCapacityException, IncorrectBufferByteOrderException, IncorrectBufferTypeException, BufferReadonlyException {
         BufferUtils.checkByteBuffer(streamPointerOut, ByteOrder.nativeOrder(), NATIVE_POINTER_SIZE);
-        return nSetupStream(modelStatePointer, preAllocFrames, sampleRate, streamPointerOut);
+        return nSetupStream(modelStatePointer, streamPointerOut);
     }
 
     /**
-     * Unexposed unsafe method that should not be used. Use instead: {@link #setupStream(long, long, long, ByteBuffer)}
+     * Unexposed unsafe method that should not be used. Use instead: {@link #setupStream(long, ByteBuffer)}
      */
-    @Calls("DS_SetupStream")
+    @Calls("DS_CreateStream")
     @NativeType("jint")
     private static native int nSetupStream(@NativeType("struct ModelState *") long modelStatePointer,
-                                           @NativeType("jlong") long preAllocFrames,
-                                           @NativeType("jlong") long sampleRate,
                                            @DynamicPointer("finishStream")
                                            @NativeType("struct StreamingState **")
                                            @NotNull
@@ -346,7 +337,7 @@ public class DeepSpeech {
     /**
      * Feed audio samples to an ongoing streaming inference.
      *
-     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, long, long, ByteBuffer)}.
+     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, ByteBuffer)}.
      * @param audioBuffer   An array of 16-bit, mono raw audio samples at the appropriate sample rate.
      * @param numSamples    The number of samples in the audio content.
      * @throws UnexpectedBufferCapacityException if #numSamples does not match the allocated buffer capacity. Condition: {@code numSamples * Short.BYTES < audioBuffer.capacity()}
@@ -379,7 +370,7 @@ public class DeepSpeech {
      * currently capable of streaming, so it always starts from the beginning
      * of the audio.
      *
-     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, long, long, ByteBuffer)}.
+     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, ByteBuffer)}.
      * @return The STT intermediate result.
      */
     @Calls("DS_IntermediateDecode")
@@ -391,7 +382,7 @@ public class DeepSpeech {
      * Signal the end of an audio signal to an ongoing streaming
      * inference, returns the STT result over the whole audio signal.
      *
-     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, long, long, ByteBuffer)}.
+     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, ByteBuffer)}.
      * @return The STT result.
      */
     @Calls("DS_FinishStream")
@@ -403,14 +394,15 @@ public class DeepSpeech {
      * Signal the end of an audio signal to an ongoing streaming
      * inference, returns per-letter metadata.
      *
-     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, long, long, ByteBuffer)}.
+     * @param streamPointer A streaming state pointer created by {@link #setupStream(long, ByteBuffer)}.
+     * @param numResults The number of candidate transcripts to return.
      * @return Outputs a struct of individual letters along with their timing information.
      * The user is responsible for freeing Metadata by calling {@link #freeMetadata(long)}. Returns {@link #NULL} on error.
      */
     @Calls("DS_FinishStreamWithMetadata")
     @NativeType("struct Metadata *")
     @DynamicPointer("freeMetadata")
-    public static native long finishStreamWithMetadata(@NativeType("struct StreamingState *") long streamPointer);
+    public static native long finishStreamWithMetadata(@NativeType("struct StreamingState *") long streamPointer, long numResults);
 
     /**
      * This method will free the state pointer #streamPointer.
@@ -432,10 +424,13 @@ public class DeepSpeech {
     public static native void freeMetadata(@NativeType("struct Metadata *") long metaDataPointer);
 
     /**
-     * Prints version of this library and of the linked TensorFlow library.
+     * Gets the version of this library. The returned version is a semantic version (SemVer 2.0.0)
      */
-    @Calls("DS_PrintVersions")
-    public static native void printVersions();
+    @Calls("DS_Version")
+    public static native String getVersion();
+
+    @Calls("DS_ErrorCodeToErrorMessage")
+    public static native String errorCodeToErrorMessage(long errorCode);
 
     /**
      * @return the configuration the jni library has been built for

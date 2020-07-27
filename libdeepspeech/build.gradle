@@ -1,9 +1,11 @@
 plugins {
     id 'java'
+    id 'distribution'
+    id 'maven-publish'
 }
 
 group 'org.mozilla.deepspeech'
-version '1.0'
+version '1.0.4-SNAPSHOT'
 
 sourceCompatibility = 1.6
 
@@ -15,3 +17,49 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile("org.jetbrains:annotations:16.0.1") // Jetbrains annotations library
 }
+
+//task linuxJniZip(type: Zip) {
+//    archiveName("deepspeech-jni.zip")
+//    destinationDir(file("$buildDir/dist"))
+////    archiveFileName = "deepspeech-jni.zip"
+////    destinationDirectory = file("$buildDir/target")
+//    from "../DeepSpeech-jni/libs/linux"
+//}
+
+//artifacts {
+//    linuxJniZip
+//}
+
+distributions {
+    linux {
+        contents {
+            from '../DeepSpeech-jni/libs/linux'
+        }
+    }
+    windows {
+        contents {
+            from '../DeepSpeech-jni/libs/windows'
+        }
+    }
+}
+
+publishing {
+  publications {
+      libdeepspeech(MavenPublication) {
+          from components.java
+          artifact linuxDistZip
+          artifact windowsDistZip
+      }
+  }
+  repositories {
+    maven {
+      name "GitHubPackages"
+      url "https://maven.pkg.github.com/" + System.getenv('GITHUB_REPOSITORY')
+      credentials {
+        username System.getenv('GITHUB_ACTOR')
+        password System.getenv('GITHUB_TOKEN')
+      }
+    }
+  }
+}
+          
